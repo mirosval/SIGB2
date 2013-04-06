@@ -1,3 +1,4 @@
+from __future__ import print_function
 import cv2
 import numpy as np
 from pylab import *
@@ -32,7 +33,7 @@ def drawTrace(homography, sourceTrace, destinationImage):
         destPoint = (int(destPoint[0] / w), int(destPoint[1] / w))
 
         # draw it into the image
-        cv2.circle(destinationImage, destPoint, 1, (0, 0, 255))
+        cv2.circle(destinationImage, destPoint, 1, (0, 0, 255), -1)
 
     return destinationImage
 
@@ -80,3 +81,55 @@ def displayTraceImage():
     # display on screen as well
     cv2.imshow("Trace", map)
     cv2.waitKey(0)
+
+def traceVideo():
+    map = cv2.imread("Images/ITUMap.bmp")
+    trace = np.loadtxt('GroundFloorData/trackingdata.dat')
+
+    homography = [[  8.90361746e-01, 7.47992675e+00, -1.41155997e+02],
+                  [ -1.59597293e+00, 3.02053067e+00, 3.18806955e+02],
+                  [  1.65239983e-03, 1.57927362e-02, 1.00000000e+00]]
+    sequence = cv2.VideoCapture("GroundFloorData/SunClipDS.avi")
+    retval, image = sequence.read()
+
+#    outputVideo = cv2.VideoWriter("Solutions/trace.avi", cv2.cv.FOURCC("i", "Y", "U", "V"), sequence.get(cv2.cv.CV_CAP_PROP_FPS), (map.shape[0], map.shape[1]))
+    outputVideo = cv2.VideoWriter("Solutions/trace.avi", cv2.cv.FOURCC("X", "V", "I", "D"), sequence.get(cv2.cv.CV_CAP_PROP_FPS), (map.shape[0], map.shape[1]))
+
+    tx = map.shape[1] - image.shape[1]
+    ty = map.shape[0] - image.shape[0]
+
+    totalFrames = sequence.get(cv2.cv.CV_CAP_PROP_FRAME_COUNT)
+
+    print("Processing Video")
+
+    traceId = 0
+    while retval:
+        for y in range(ty, map.shape[0]):
+            for x in range(tx, map.shape[1]):
+                map[y][x] = image[y - ty][x - tx]
+
+        frameTrackingData = trace[traceId]
+
+        point = ((frameTrackingData[4] + frameTrackingData[6]) / 2.0, frameTrackingData[7], 1)
+        destPoint = dot(homography, point)
+
+        # denormalize point
+        w = destPoint[2]
+        destPoint = (int(destPoint[0] / w), int(destPoint[1] / w))
+
+        # draw it into the image
+        cv2.circle(map, destPoint, 2, (0, 0, 255), -1)
+
+#        cv2.imshow("Trace", map)
+#        cv2.waitKey(0)
+
+        outputVideo.write(map)
+
+        print(".", end="")
+        if traceId % 24 == 0:
+            print("%.2f%%" % round(traceId / totalFrames * 100, 2))
+
+        retval, image = sequence.read()
+        traceId += 1
+
+#    cv2.waitKey(0)

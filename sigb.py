@@ -1,3 +1,4 @@
 import Solutions
 
-Solutions.displayTraceImage()
+# Solutions.displayTraceImage()
+Solutions.traceVideo()
