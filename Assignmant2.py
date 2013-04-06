@@ -7,6 +7,7 @@ from matplotlib.pyplot import *
 from scipy import *
 import math
 import SIGBTools
+from SIGBTools import getImageSequence
 
 inputFile = "GroundFloorData/SunClipDS.avi"
 
