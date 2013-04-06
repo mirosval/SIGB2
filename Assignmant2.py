@@ -7,6 +7,8 @@ from matplotlib.pyplot import *
 from scipy import *
 import math
 import SIGBTools
+
+
 def frameTrackingData2BoxData(data):
     # Convert a row of points into tuple of points for each rectangle
     pts = [ (int(data[i]), int(data[i + 1])) for i in range(0, 11, 2) ]
@@ -19,11 +21,18 @@ def frameTrackingData2BoxData(data):
 
 def simpleTextureMap():
 
-    I1 = cv2.imread('Images/ITULogo.jpg')
+    sequence = cv2.VideoCapture("GroundFloorData/SunClipDS.avi")
+    retval, I1 = sequence.read()
+
+
+#    I1 = cv2.imread('Images/ITULogo.jpg')
     I2 = cv2.imread('Images/ITUMap.bmp')
 
     # Print Help
     H, Points = SIGBTools.getHomographyFromMouse(I1, I2, 4)
+
+    print(H)
+
     h, w, d = I2.shape
     overlay = cv2.warpPerspective(I1, H, (w, h))
     M = cv2.addWeighted(I2, 0.5, overlay, 0.5, 0)
@@ -202,7 +211,8 @@ def texturemapObjectSequence():
             cv2.circle(imgOrig, (100, 100), 10, (255, 0, 0))
             cv2.imshow("Detection", imgOrig)
             cv2.waitKey(1)
+
 # showFloorTrackingData()
 # simpleTextureMap()
 # realisticTexturemap(0,0,0)
-texturemapGridSequence()
+# texturemapGridSequence()

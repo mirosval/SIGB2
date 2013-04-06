@@ -1,0 +1,3 @@
+import Solutions
+
+Solutions.displayTraceImage()
