@@ -142,21 +142,12 @@ def texturemapGroundFloor(SequenceInputFile):
     I1 = cv2.imread('Images/ITULogo.jpg')
     H, Points = SIGBTools.getHomographyFromMouse(I1, I2, -4)
     h, w, d = I2.shape
-    texturemapGroundFloorHelper(SequenceInputFile, I1, H, (w, h))
-
-def texturemapGroundFloorHelper(inputFile, I1, H, (w, h)):
-    global imgOrig, frameNr, drawImg
-    cap, imgOrig, sequenceOK = getImageSequence(inputFile)
-    videoWriter = 0
-    frameNr = 0
-    if(sequenceOK):
-        cv2.imshow("Overlayed Image", imgOrig)
+    if(retval):
+        cv2.imshow("Overlayed Image", I2)
     print("SPACE: Run/Pause")
     print("Q or ESC: Stop")
-    frameNr = 0;
     running = True
-    while(sequenceOK):
-        frameNr = frameNr + 1
+    while(retval):
         ch = cv2.waitKey(1)
         # Select regions
         if(ch == 32):  # Spacebar
@@ -169,10 +160,10 @@ def texturemapGroundFloorHelper(inputFile, I1, H, (w, h)):
         if(ch == ord('q')):
             break
         if(running):
-            sequenceOK, imgOrig = cap.read()
-            if(sequenceOK):  # if there is an image
+            retval, I2 = sequence.read()
+            if(retval):  # if there is an image
                 overlay = cv2.warpPerspective(I1, H, (w, h))
-                M = cv2.addWeighted(imgOrig, 0.5, overlay, 0.5, 0)
+                M = cv2.addWeighted(I2, 0.5, overlay, 0.5, 0)
                 cv2.imshow("Overlayed Image", M)
 
 
