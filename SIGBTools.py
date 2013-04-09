@@ -5,6 +5,7 @@ import pylab
 from pylab import *
 import matplotlib as mpl
 import math
+from scipy import linalg
 ''' This module contains sets of functions useful for basic image analysis and should be useful in the SIGB course.
 Written and Assembled  (2012,2013) by  Dan Witzner Hansen, IT University.
 '''
@@ -525,12 +526,17 @@ def H_from_points(fp, tp):
     # decondition
     H = dot(linalg.inv(T2), dot(H, T1))  # normalize and return
     return H / H[2, 2]
-def calibrateCamera(camNum=0, nPoints=5, patternSize=(9, 6)):
+
+
+def calibrateCamera(camNum=0, nPoints=5, patternSize=(9, 6), saveImage=False):
     ''' CalibrateCamera captures images from camera (camNum)
         The user should press spacebar when the calibration pattern
         is in view.
+        When saveImage is a boolean it indicates whether the images used for calibration should be saved
+        When it is True the image will be save into a default filename. When saveImage is a string the images
+        will be saved using the string as the filename.
     '''
-    print('click on the image window and then press space key to take some samples')
+    print('click on the image window and then press the space key to take samples')
     cv2.namedWindow("camera", 1)
     pattern_size = patternSize
     n = nPoints  # number of images before calibration
@@ -554,7 +560,8 @@ def calibrateCamera(camNum=0, nPoints=5, patternSize=(9, 6)):
     running = True
     while running:
 
-        ret, img = capture.read()
+        ret, imgOrig = capture.read()
+        img = imgOrig.copy()
         h, w = img.shape[:2]
         imgGray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
@@ -579,7 +586,13 @@ def calibrateCamera(camNum=0, nPoints=5, patternSize=(9, 6)):
                 n = n - 1
                 imgCnt = imgCnt + 1;
                 print('sample %s taken') % (imgCnt)
-
+                if(saveImage != False):
+                    if(saveImage == True):
+                        fileName = 'CalibrationImage' + str(imgCnt) + ".jpg"
+                    else:
+                        fileName = saveImage + str(imgCnt) + ".jpg"
+                    print("saving Image " + fileName)
+                    cv2.imwrite(fileName, imgOrig)
                 if n == 0:
     #                print( img_points)
     #                print(obj_points)
@@ -602,3 +615,82 @@ def calibrateCamera(camNum=0, nPoints=5, patternSize=(9, 6)):
         #        cv2.drawChessboardCorners(img, pattern_size, corners,found)
 
         cv2.imshow("camera", img)
+
+
+class Camera:
+    """ Class for representing pin-hole cameras. """
+
+    def __init__(self, P):
+        """ Initialize P = K[R|t] camera model. """
+        self.P = P
+        self.K = None  # calibration matrix
+        self.R = None  # rotation
+        self.t = None  # translation
+        self.c = None  # camera center
+
+
+    def project(self, X):
+        """    Project points in X (4*n array) and normalize coordinates. """
+
+        x = dot(self.P, X)
+        for i in range(3):
+            x[i] /= x[2]
+        return x
+
+
+    def factor(self):
+        """    Factorize the camera matrix into K,R,t as P = K[R|t]. """
+
+        # factor first 3*3 part
+        K, R = linalg.rq(self.P[:, :3])
+
+        # make diagonal of K positive
+        T = diag(sign(diag(K)))
+
+        self.K = dot(K, T)
+        self.R = dot(T, R)  # T is its own inverse
+        self.t = dot(linalg.inv(self.K), self.P[:, 3])
+
+        return self.K, self.R, self.t
+
+
+    def center(self):
+        """    Compute and return the camera center. """
+
+        if self.c is not None:
+            return self.c
+        else:
+            # compute c by factoring
+            self.factor()
+            self.c = -dot(self.R.T, self.t)
+            return self.c
+
+
+    def calibrate_from_points(x1, x2):
+
+        return self.K
+
+
+    def simple_calibrate(a, b):
+
+        return self.K
+
+
+# helper functions
+
+def rotation_matrix(a):
+    """    Creates a 3D rotation matrix for rotation
+         around the axis of the vector a. """
+    R = eye(4)
+    R[:3, :3] = linalg.expm([[0, -a[2], a[1]], [a[2], 0, -a[0]], [-a[1], a[0], 0]])
+    return R
+
+
+def rq(A):
+    from scipy.linalg import qr
+
+    Q, R = qr(flipud(A).T)
+    R = flipud(R.T)
+    Q = Q.T
+
+    return R[:, ::-1], Q[::-1, :]
