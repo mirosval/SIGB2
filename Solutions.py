@@ -3,7 +3,9 @@ import cv2
 import numpy as np
 from pylab import *
 from SIGBTools import getImageSequence
+from cubePoints import cube_points
 import SIGBTools
+
 
 def drawTrace(homography, sourceTrace, destinationImage):
     '''
@@ -227,6 +229,8 @@ def augmentImages():
     for i in range(1, 8):
         images.append(cv2.imread("Solutions/cam_calibration{}.jpg".format(i)))
 
+    camera = SIGBTools.Camera(hstack((cam_calibration, dot(cam_calibration, [[0], [0], [-1]]))))
+
     for image in images:
         idx = np.array([0, 8, 45, 53])
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -235,9 +239,37 @@ def augmentImages():
         if not found:
             continue
 
+        localCoordinates = []
         for i in idx:
             p = corners[i][0]
-            cv2.circle(image, (int(p[0]), int(p[1])), 10, (255, 255, 0))
+            point = (int(p[0]), int(p[1]))
+            cv2.circle(image, point, 10, (255, 255, 0))
+            localCoordinates.append(point)
+
+        globalCoordinates = [(0, 0),
+                             (6, 0),
+                             (0, 6),
+                             (6, 6)]
+
+        homography = SIGBTools.estimateHomography(localCoordinates, globalCoordinates)
+
+        cube = cube_points((3, 3, 3), 3)
+
+        box = camera.project(SIGBTools.toHomogenious(cube[:, :5]))
+
+        cam2 = SIGBTools.Camera(dot(homography, camera.P))
+
+        A = dot(linalg.inv(cam_calibration), cam2.P[:, :3])
+        A = array([A[:, 0], A[:, 1], cross(A[:, 0], A[:, 1])]).T
+
+        cam2.P[:, :3] = dot(cam_calibration, A)
+
+        box2 = cam2.project(SIGBTools.toHomogenious(box))
+
+        print(box2)
+
+#        print(homography)
+#        print(cube)
 
         cv2.imshow("Test", image)
         cv2.waitKey(0)
