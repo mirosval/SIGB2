@@ -229,44 +229,142 @@ def augmentImages():
     for i in range(1, 8):
         images.append(cv2.imread("Solutions/cam_calibration{}.jpg".format(i)))
 
-    camera = SIGBTools.Camera(hstack((cam_calibration, dot(cam_calibration, [[0], [0], [-1]]))))
-
     for image in images:
         idx = np.array([0, 8, 45, 53])
+        idx = np.array([1, 7, 37, 43])
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         found, corners = cv2.findChessboardCorners(gray, (9, 6))
 
         if not found:
             continue
 
-        localCoordinates = []
+        imagePoints = []
         for i in idx:
             p = corners[i][0]
             point = (int(p[0]), int(p[1]))
             cv2.circle(image, point, 10, (255, 255, 0))
-            localCoordinates.append(point)
+ #            point = np.array(point)
+            imagePoints.append(point)
 
-        globalCoordinates = [(0, 0),
-                             (6, 0),
-                             (0, 6),
-                             (6, 6)]
+        imagePoints = np.array(imagePoints, dtype=float32)
+        objectPoints = np.array([[0, 0, 0],
+                                 [0, 6, 0],
+                                 [6, 0, 0],
+                                 [6, 6, 0]], dtype=float32)
 
-        homography = SIGBTools.estimateHomography(localCoordinates, globalCoordinates)
+        retval, rvec, tvec = cv2.solvePnP(objectPoints, imagePoints, cam_calibration, distCoef)
 
-        cube = cube_points((3, 3, 3), 3)
+        box = np.array(cube_points((3, 3, 3), 3).T, dtype=float32)
 
-        box = camera.project(SIGBTools.toHomogenious(cube[:, :5]))
+        imagePoints, jacobian = cv2.projectPoints(box, rvec, tvec, cam_calibration, distCoef)
 
-        cam2 = SIGBTools.Camera(dot(homography, camera.P))
+        count = len(imagePoints)
+        for i in range(count):
+            if i + 1 == count:
+                break
 
-        A = dot(linalg.inv(cam_calibration), cam2.P[:, :3])
-        A = array([A[:, 0], A[:, 1], cross(A[:, 0], A[:, 1])]).T
+            point1 = (int(imagePoints[i][0][0]), int(imagePoints[i][0][1]))
+            point2 = (int(imagePoints[i + 1][0][0]), int(imagePoints[i + 1][0][1]))
 
-        cam2.P[:, :3] = dot(cam_calibration, A)
+            cv2.line(image, point1, point2, (0, 0, 255), 2)
 
-        box2 = cam2.project(SIGBTools.toHomogenious(box))
 
-        print(box2)
+
+#        box = cube_points((3, 3, 3), 3)
+# #        box = cube_points((0, 0, 0), 6)
+#
+#        homography, mask = cv2.findHomography(objectPoints, imagePoints)
+# #        homography, mask = cv2.findHomography(imagePoints, objectPoints)
+# #        homography = SIGBTools.estimateHomography(objectPoints, imagePoints)
+#
+#        # project bottom square in first image
+#        cam1 = SIGBTools.Camera(hstack((cam_calibration, dot(cam_calibration, array([[0], [0], [-1]])))))
+#        # first points are the bottom square
+#        box_cam1 = cam1.project(SIGBTools.toHomogenious(box[:, :5]))
+#        # compute second camera matrix from cam1 and H
+#        cam2 = SIGBTools.Camera(dot(homography, cam1.P))
+#        A = dot(linalg.inv(cam_calibration), cam2.P[:, :3])
+#        A = array([A[:, 0], A[:, 1], cross(A[:, 0], A[:, 1])]).T
+#        cam2.P[:, :3] = dot(cam_calibration, A)
+#        # project with the second camera
+#        box_cam2 = cam2.project(SIGBTools.toHomogenious(box))
+#
+#        count = len(box_cam1[0])
+#        for i in range(count):
+#            if i + 1 == count:
+#                break
+#
+#            point1 = (int(box_cam1[0][i]), int(box_cam1[1][i]))
+#            point2 = (int(box_cam1[0][i + 1]), int(box_cam1[1][i + 1]))
+#
+#            cv2.line(image, point1, point2, (0, 255, 0), 2)
+#
+#        count = len(box_cam2[0])
+#        for i in range(count):
+#            if i + 1 == count:
+#                break
+#
+#            point1 = (int(box_cam2[0][i]), int(box_cam2[1][i]))
+#            point2 = (int(box_cam2[0][i + 1]), int(box_cam2[1][i + 1]))
+#
+#            cv2.line(image, point1, point2, (0, 0, 255), 2)
+
+
+
+
+
+
+#        imagePoints = np.array(imagePoints, dtype=float32)
+#        objectPoints = np.array([[0, 0, 0],
+#                                 [6, 0, 0],
+#                                 [0, 6, 0],
+#                                 [6, 6, 0]], dtype=float32)
+#
+#        retval, rvec, tvec = cv2.solvePnP(objectPoints, imagePoints, cam_calibration, distCoef)
+#
+#        rotationMatrix, jacobian = cv2.Rodrigues(rvec)
+#
+#        extrinsicCamera = np.hstack((rotationMatrix, tvec))
+#
+#        camera.P = dot(cam_calibration, extrinsicCamera)
+#
+#        cube = cube_points((3, 3, 3), 3).T
+#
+#        for i in range(len(cube)):
+#            point1 = []
+#            point2 = []
+#
+#            if i == len(cube) - 1:
+#                point1 = cube[i]
+#                point2 = cube[0]
+#            else:
+#                point1 = cube[i]
+#                point2 = cube[i + 1]
+#
+#            point1 = camera.project((point1[0], point1[1], point1[2], 1))
+#            point2 = camera.project((point2[0], point2[1], point2[2], 1))
+#
+#            point1 = (int(point1[0]), int(point1[1]))
+#            point2 = (int(point2[0]), int(point2[1]))
+#
+#            cv2.line(image, point1, point2, (0, 0, 255), 2)
+
+#        homography = SIGBTools.estimateHomography(localCoordinates, globalCoordinates)
+#
+#        cube = cube_points((3, 3, 3), 3)
+#
+#        box = camera.project(SIGBTools.toHomogenious(cube[:, :5]))
+#
+#        cam2 = SIGBTools.Camera(dot(homography, camera.P))
+#
+#        A = dot(linalg.inv(cam_calibration), cam2.P[:, :3])
+#        A = array([A[:, 0], A[:, 1], cross(A[:, 0], A[:, 1])]).T
+#
+#        cam2.P[:, :3] = dot(cam_calibration, A)
+#
+#        box2 = cam2.project(SIGBTools.toHomogenious(box))
+#
+#        print(box2)
 
 #        print(homography)
 #        print(cube)
