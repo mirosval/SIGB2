@@ -1,0 +1,93 @@
+%%% Preamble
+% Article class of KOMA-script with 11pt font and a4 format
+\documentclass[paper=a4, fontsize=11pt]{scrartcl}	
+\usepackage[T1]{fontenc}
+\usepackage{fourier}
+
+% English language/hyphenation
+\usepackage[english]{babel}
+
+% Better typography
+\usepackage[protrusion=true,expansion=true]{microtype}
+
+% Math packages
+\usepackage{amsmath,amsfonts,amsthm}
+
+% Enable pdflatex
+\usepackage[pdftex]{graphicx}
+\usepackage{url}
+
+\usepackage{caption}
+\usepackage{subcaption}
+
+% Tables
+\usepackage{multirow}
+
+%%% Custom sectioning (sectsty package)
+% Custom sectioning (see below)
+\usepackage{sectsty}
+% Change font of al section commands
+\allsectionsfont{\centering \normalfont\scshape}
+
+\setlength{\parindent}{25pt}
+
+%%% Custom headers/footers (fancyhdr package)
+\usepackage{fancyhdr}
+\pagestyle{fancyplain}
+
+% No page header
+\fancyhead{}
+
+% You may remove/edit this line 
+\fancyfoot[L]{\small SIGB Hand-in 2}
+\fancyfoot[C]{} % Empty
+\fancyfoot[R]{\thepage} % Pagenumbering
+\renewcommand{\headrulewidth}{0pt} % Remove header underlines
+\renewcommand{\footrulewidth}{0pt} % Remove footer underlines
+\setlength{\headheight}{13.6pt}
+
+
+%%% Equation and float numbering
+\numberwithin{equation}{section} % Equationnumbering: section.eq#
+\numberwithin{figure}{section} % Figurenumbering: section.fig#
+\numberwithin{table}{section} % Tablenumbering: section.tab#
+
+
+%%% Maketitle metadata
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Horizontal rule
+
+\title{
+		%\vspace{-1in} 	
+		\usefont{OT1}{bch}{b}{n}
+		\normalfont \normalsize \textsc{IT University of Copenhagen} \\ [25pt]
+		\horrule{0.5pt} \\[0.4cm]
+		\huge Mandatory Assignment 2 \\
+		\horrule{2pt} \\[0.5cm]
+}
+
+\author{
+	\normalfont 
+	\normalsize
+	Miroslav Zoricak (mzor@itu.dk) \\[-3pt]
+	\normalsize
+	Jorge Castillo R. (jyur@itu.dk) \\[-3pt]
+	\normalsize
+	\today
+}
+
+\date{}
+
+
+%%% Begin document
+\begin{document}
+\maketitle
+
+\input{Handin2/intro}
+\input{Handin2/personmaplocation}
+\input{Handin2/lineartexturemapping}
+\input{Handin2/cameracalibrationaugmentation}
+\input{Handin2/conclusion}
+
+
+%%% End document
+\end{document}
