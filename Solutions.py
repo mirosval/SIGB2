@@ -270,20 +270,6 @@ def augmentImages():
 
         transRect = SIGBTools.normalizeHomogenious(dot(homography, calibration_rect))
 
-#         for i in range(1, 5):
-#             x1 = calibration_rect[0, i - 1]
-#             y1 = calibration_rect[1, i - 1]
-#             x2 = calibration_rect[0, i]
-#             y2 = calibration_rect[1, i]
-#             cv2.line(image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 255), 2)
-#
-#         for i in range(1, 5):
-#             x1 = transRect[0, i - 1]
-#             y1 = transRect[1, i - 1]
-#             x2 = transRect[0, i]
-#             y2 = transRect[1, i]
-#             cv2.line(image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255))
-
         cam2 = Camera(dot(homography, cam1.P))
 
         calibrationInverse = np.linalg.inv(cam_calibration)
