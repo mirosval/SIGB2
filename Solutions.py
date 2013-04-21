@@ -3,6 +3,7 @@ import cv2
 import numpy as np
 from pylab import *
 from SIGBTools import getImageSequence
+from SIGBTools import Camera
 from cubePoints import cube_points
 import SIGBTools
 
@@ -225,13 +226,19 @@ def loadCameraCalibration():
 
 def augmentImages():
     cam_calibration, distCoef = loadCameraCalibration()
+
+    idx = np.array([1, 7, 37, 43])
+
+    calibration_pattern = cv2.imread("Images/CalibrationPattern.png")
+    calibration_pattern = cv2.resize(calibration_pattern, (640, 480))
+    calibration_pattern = cv2.cvtColor(calibration_pattern, cv2.COLOR_BGR2GRAY)
+    found, calibrationCorners = cv2.findChessboardCorners(calibration_pattern, (9, 6))
+
     images = []
     for i in range(1, 8):
         images.append(cv2.imread("Solutions/cam_calibration{}.jpg".format(i)))
 
     for image in images:
-        idx = np.array([0, 8, 45, 53])
-        idx = np.array([1, 7, 37, 43])
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         found, corners = cv2.findChessboardCorners(gray, (9, 6))
 
@@ -239,135 +246,126 @@ def augmentImages():
             continue
 
         imagePoints = []
+        calibrationPoints = []
         for i in idx:
             p = corners[i][0]
-            point = (int(p[0]), int(p[1]))
-            cv2.circle(image, point, 10, (255, 255, 0))
- #            point = np.array(point)
-            imagePoints.append(point)
+            cp = calibrationCorners[i][0]
+            imagePoints.append(p)
+            calibrationPoints.append(cp)
 
-        imagePoints = np.array(imagePoints, dtype=float32)
-        objectPoints = np.array([[0, 0, 0],
-                                 [0, 6, 0],
-                                 [6, 0, 0],
-                                 [6, 6, 0]], dtype=float32)
+        imagePoints = np.array(imagePoints)
+        calibrationPoints = np.array(calibrationPoints)
 
-        retval, rvec, tvec = cv2.solvePnP(objectPoints, imagePoints, cam_calibration, distCoef)
+        # Create imageCameraXRotation window for calibration image and show it
+        cv2.namedWindow('calibration image')
+        cv2.imshow('calibration image', calibration_pattern)
 
-        box = np.array(cube_points((3, 3, 3), 3).T, dtype=float32)
+        cam1 = Camera(hstack((cam_calibration, dot(cam_calibration, np.array([[0], [0], [-1]])))))
+        cam1.factor()
 
-        imagePoints, jacobian = cv2.projectPoints(box, rvec, tvec, cam_calibration, distCoef)
+        cube = cube_points([0, 0, 0.1], 0.3)
+        calibration_rect = cam1.project(SIGBTools.toHomogenious(cube[:, :5]))
 
-        count = len(imagePoints)
-        for i in range(count):
-            if i + 1 == count:
-                break
+        homography = SIGBTools.estimateHomography(calibrationPoints, imagePoints)
 
-            point1 = (int(imagePoints[i][0][0]), int(imagePoints[i][0][1]))
-            point2 = (int(imagePoints[i + 1][0][0]), int(imagePoints[i + 1][0][1]))
+        transRect = SIGBTools.normalizeHomogenious(dot(homography, calibration_rect))
 
-            cv2.line(image, point1, point2, (0, 0, 255), 2)
+#         for i in range(1, 5):
+#             x1 = calibration_rect[0, i - 1]
+#             y1 = calibration_rect[1, i - 1]
+#             x2 = calibration_rect[0, i]
+#             y2 = calibration_rect[1, i]
+#             cv2.line(image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 255, 255), 2)
+#
+#         for i in range(1, 5):
+#             x1 = transRect[0, i - 1]
+#             y1 = transRect[1, i - 1]
+#             x2 = transRect[0, i]
+#             y2 = transRect[1, i]
+#             cv2.line(image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255))
 
+        cam2 = Camera(dot(homography, cam1.P))
 
+        calibrationInverse = np.linalg.inv(cam_calibration)
 
-#        box = cube_points((3, 3, 3), 3)
-# #        box = cube_points((0, 0, 0), 6)
-#
-#        homography, mask = cv2.findHomography(objectPoints, imagePoints)
-# #        homography, mask = cv2.findHomography(imagePoints, objectPoints)
-# #        homography = SIGBTools.estimateHomography(objectPoints, imagePoints)
-#
-#        # project bottom square in first image
-#        cam1 = SIGBTools.Camera(hstack((cam_calibration, dot(cam_calibration, array([[0], [0], [-1]])))))
-#        # first points are the bottom square
-#        box_cam1 = cam1.project(SIGBTools.toHomogenious(box[:, :5]))
-#        # compute second camera matrix from cam1 and H
-#        cam2 = SIGBTools.Camera(dot(homography, cam1.P))
-#        A = dot(linalg.inv(cam_calibration), cam2.P[:, :3])
-#        A = array([A[:, 0], A[:, 1], cross(A[:, 0], A[:, 1])]).T
-#        cam2.P[:, :3] = dot(cam_calibration, A)
-#        # project with the second camera
-#        box_cam2 = cam2.project(SIGBTools.toHomogenious(box))
-#
-#        count = len(box_cam1[0])
-#        for i in range(count):
-#            if i + 1 == count:
-#                break
-#
-#            point1 = (int(box_cam1[0][i]), int(box_cam1[1][i]))
-#            point2 = (int(box_cam1[0][i + 1]), int(box_cam1[1][i + 1]))
-#
-#            cv2.line(image, point1, point2, (0, 255, 0), 2)
-#
-#        count = len(box_cam2[0])
-#        for i in range(count):
-#            if i + 1 == count:
-#                break
-#
-#            point1 = (int(box_cam2[0][i]), int(box_cam2[1][i]))
-#            point2 = (int(box_cam2[0][i + 1]), int(box_cam2[1][i + 1]))
-#
-#            cv2.line(image, point1, point2, (0, 0, 255), 2)
+        rot = dot(calibrationInverse, cam2.P[:, :3])
 
+        r1, r2, t = tuple(np.hsplit(rot, 3))
+        r3 = cross(r1.T, r2.T).T
+        rotationTranslationMatrix = np.hstack((r1, r2, r3, t))
 
+        cam2.P = dot(cam_calibration, rotationTranslationMatrix)
+        cam2.factor()
 
+        cube = cube_points([0, 0, 0.1], 0.3)
+        box = cam2.project(SIGBTools.toHomogenious(cube))
 
-
-
-#        imagePoints = np.array(imagePoints, dtype=float32)
-#        objectPoints = np.array([[0, 0, 0],
-#                                 [6, 0, 0],
-#                                 [0, 6, 0],
-#                                 [6, 6, 0]], dtype=float32)
-#
-#        retval, rvec, tvec = cv2.solvePnP(objectPoints, imagePoints, cam_calibration, distCoef)
-#
-#        rotationMatrix, jacobian = cv2.Rodrigues(rvec)
-#
-#        extrinsicCamera = np.hstack((rotationMatrix, tvec))
-#
-#        camera.P = dot(cam_calibration, extrinsicCamera)
-#
-#        cube = cube_points((3, 3, 3), 3).T
-#
-#        for i in range(len(cube)):
-#            point1 = []
-#            point2 = []
-#
-#            if i == len(cube) - 1:
-#                point1 = cube[i]
-#                point2 = cube[0]
-#            else:
-#                point1 = cube[i]
-#                point2 = cube[i + 1]
-#
-#            point1 = camera.project((point1[0], point1[1], point1[2], 1))
-#            point2 = camera.project((point2[0], point2[1], point2[2], 1))
-#
-#            point1 = (int(point1[0]), int(point1[1]))
-#            point2 = (int(point2[0]), int(point2[1]))
-#
-#            cv2.line(image, point1, point2, (0, 0, 255), 2)
-
-#        homography = SIGBTools.estimateHomography(localCoordinates, globalCoordinates)
-#
-#        cube = cube_points((3, 3, 3), 3)
-#
-#        box = camera.project(SIGBTools.toHomogenious(cube[:, :5]))
-#
-#        cam2 = SIGBTools.Camera(dot(homography, camera.P))
-#
-#        A = dot(linalg.inv(cam_calibration), cam2.P[:, :3])
-#        A = array([A[:, 0], A[:, 1], cross(A[:, 0], A[:, 1])]).T
-#
-#        cam2.P[:, :3] = dot(cam_calibration, A)
-#
-#        box2 = cam2.project(SIGBTools.toHomogenious(box))
-#
-#        print(box2)
-
-#        print(homography)
-#        print(cube)
+        for i in range(1, 17):
+            x1 = box[0, i - 1]
+            y1 = box[1, i - 1]
+            x2 = box[0, i]
+            y2 = box[1, i]
+            cv2.line(image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
 
         cv2.imshow("Test", image)
         cv2.waitKey(0)
+
+
+def texturemapGridSequence():
+    """ Skeleton for texturemapping on a video sequence"""
+    fn = 'GridVideos/grid1.mp4'
+    cap = cv2.VideoCapture(fn)
+    drawContours = True;
+
+    texture = cv2.imread('Images/ITULogo.jpg')
+    texture = cv2.pyrDown(texture)
+
+
+    mTex, nTex, t = texture.shape
+
+    texturePoints = np.array([[0, 0],
+                              [0, nTex],
+                              [mTex, 0],
+                              [mTex, nTex]], dtype=np.float32)
+
+    # load Tracking data
+    running, imgOrig = cap.read()
+    mI, nI, t = imgOrig.shape
+
+    cv2.imshow("win2", imgOrig)
+
+    pattern_size = (9, 6)
+
+    idx = [0, 8, 45, 53]
+    while(running):
+    # load Tracking data
+        running, imgOrig = cap.read()
+        if(running):
+            imgOrig = cv2.pyrDown(imgOrig)
+            gray = cv2.cvtColor(imgOrig, cv2.COLOR_BGR2GRAY)
+            found, corners = cv2.findChessboardCorners(gray, pattern_size)
+            if found:
+                term = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_COUNT, 30, 0.1)
+                cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), term)
+#                 cv2.drawChessboardCorners(imgOrig, pattern_size, corners, found)
+
+                imagePoints = np.array([[corners[0][0][0], corners[0][0][1]],
+                                        [corners[8][0][0], corners[8][0][1]],
+                                        [corners[45][0][0], corners[45][0][1]],
+                                        [corners[53][0][0], corners[53][0][1]]], dtype=np.float32)
+
+                homography = cv2.getPerspectiveTransform(texturePoints, imagePoints)
+
+                overlay = cv2.warpPerspective(texture, homography, (imgOrig.shape[1], imgOrig.shape[0]))
+
+                imgOrig = cv2.addWeighted(imgOrig, 0.5, overlay, 0.5, 0)
+
+#                 for y, row in enumerate(imgOrig):
+#                     for x, color in enumerate(row):
+#                         if overlay[y][x][0] != 0 and overlay[y][x][1] != 0 and overlay[y][x][2] != 0:
+#                              imgOrig[y][x] = overlay[y][x]
+
+                for t in idx:
+                    cv2.circle(imgOrig, (int(corners[t, 0, 0]), int(corners[t, 0, 1])), 10, (255, t, t))
+            cv2.imshow("win2", imgOrig)
+            cv2.waitKey(1)
