@@ -238,7 +238,7 @@ def augmentImages():
     for i in range(1, 8):
         images.append(cv2.imread("Solutions/cam_calibration{}.jpg".format(i)))
 
-    for image in images:
+    for image_id, image in enumerate(images):
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         found, corners = cv2.findChessboardCorners(gray, (9, 6))
 
@@ -292,6 +292,8 @@ def augmentImages():
             x2 = box[0, i]
             y2 = box[1, i]
             cv2.line(image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
+
+        cv2.imwrite("Solutions/augmentation{}.png".format(image_id), image)
 
         cv2.imshow("Test", image)
         cv2.waitKey(0)
