@@ -190,20 +190,17 @@ def texturemapGrid():
             if found:
                 term = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_COUNT, 30, 0.1)
                 cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), term)
-                cv2.drawChessboardCorners(imgOrig, pattern_size, corners, found)
-                H, Points=getHomography(texture, corners)
-                aaaa=np.array(Points)
+#                 cv2.drawChessboardCorners(imgOrig, pattern_size, corners, found)
+                H, Points = getHomography(texture, corners)
+                aaaa = np.array(Points)
                 for t in idx:
                     cv2.circle(imgOrig, (int(corners[t, 0, 0]), int(corners[t, 0, 1])), 10, (255, t, t))
-                overlay = cv2.warpPerspective(texture, H, (nI, mI))
-                #cv2.circle(overlay, (int(aaaa[1, 0, 0]), int(aaaa[1, 0, 1])), 20, (255, 255, 255))
-                #cv2.circle(overlay, (int(aaaa[1, 1, 0]), int(aaaa[1, 1, 1])), 20, (255, 255, 255))
-                #cv2.circle(overlay, (int(aaaa[1, 2, 0]), int(aaaa[1, 2, 1])), 20, (255, 255, 255))
-                #cv2.circle(overlay, (int(aaaa[1, 3, 0]), int(aaaa[1, 3, 1])), 20, (255, 255, 255))
-                #overlay=np.array(overlay)
-                M = cv2.addWeighted(imgOrig, 0, overlay, 0, 0)
+
+                overlay = cv2.warpPerspective(texture, H, (imgOrig.shape[1], imgOrig.shape[0]))
+
+                M = cv2.addWeighted(imgOrig, 0.5, overlay, 0.5, 0)
             cv2.imshow("win2", M)
-            cv2.waitKey(1)
+            cv2.waitKey(0)
 
 def getHomography(I1, corners1):
     imagePoints = []
