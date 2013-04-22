@@ -141,9 +141,12 @@ def traceVideo():
     outputVideo.release()
 
 def texturemapGroundFloor(SequenceInputFile):
+    '''
+    get four points in the map and overview a logo in the sequence
+    '''
     sequence, I2, retval = getImageSequence(SequenceInputFile)
     I1 = cv2.imread('Images/ITULogo.jpg')
-    H, Points = SIGBTools.getHomographyFromMouse(I1, I2, -4)
+    H, Points = SIGBTools.getHomographyFromMouse(I1, I2, -4) #get 4 points from mouse input 
     h, w, d = I2.shape
     if(retval):
         cv2.imshow("Overlayed Image", I2)
@@ -152,7 +155,7 @@ def texturemapGroundFloor(SequenceInputFile):
     running = True
     while(retval):
         ch = cv2.waitKey(1)
-        # Select regions
+        # video controls
         if(ch == 32):  # Spacebar
             if(running):
                 running = False
@@ -165,9 +168,9 @@ def texturemapGroundFloor(SequenceInputFile):
         if(running):
             retval, I2 = sequence.read()
             if(retval):  # if there is an image
-                overlay = cv2.warpPerspective(I1, H, (w, h))
-                M = cv2.addWeighted(I2, 0.5, overlay, 0.5, 0)
-                cv2.imshow("Overlayed Image", M)
+                overlay = cv2.warpPerspective(I1, H, (w, h)) #get the perspective image for overlaying on the video
+                M = cv2.addWeighted(I2, 0.5, overlay, 0.5, 0) #overlay the video with the image
+                cv2.imshow("Overlayed Image", M) #show the result
 
 def texturemapGrid():
     """ Skeleton for texturemapping on a video sequence"""
