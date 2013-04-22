@@ -142,7 +142,7 @@ def traceVideo():
 
 def texturemapGroundFloor(SequenceInputFile):
     '''
-    get four points in the map and overview a logo in the sequence
+    get four points in the map and overview a logo on the sequence
     '''
     sequence, I2, retval = getImageSequence(SequenceInputFile)
     I1 = cv2.imread('Images/ITULogo.jpg')
@@ -179,7 +179,6 @@ def texturemapGrid():
     texture = cv2.imread('Images/ITULogo.jpg')
     texture = cv2.pyrDown(texture)
     running, imgOrig = cap.read()
-    mI, nI, t = imgOrig.shape
     cv2.imshow("win2", imgOrig)
     pattern_size = (9, 6)
     idx = [0, 8, 45, 53]
@@ -191,28 +190,23 @@ def texturemapGrid():
             gray = cv2.cvtColor(imgOrig, cv2.COLOR_BGR2GRAY)
             found, corners = cv2.findChessboardCorners(gray, pattern_size)
             if found:
-                term = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_COUNT, 30, 0.1)
-                cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), term)
-#                 cv2.drawChessboardCorners(imgOrig, pattern_size, corners, found)
-                H, Points = getHomography(texture, corners)
-                aaaa = np.array(Points)
-                for t in idx:
-                    cv2.circle(imgOrig, (int(corners[t, 0, 0]), int(corners[t, 0, 1])), 10, (255, t, t))
-
-                overlay = cv2.warpPerspective(texture, H, (imgOrig.shape[1], imgOrig.shape[0]))
-
-                M = cv2.addWeighted(imgOrig, 0.7, overlay, 0.8, 0)
+                #term = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_COUNT, 30, 0.1)
+                #cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), term)
+                H, Points = getHomography(texture, corners) #find the homography matrix to overview the texture on patterns corners
+                overlay = cv2.warpPerspective(texture, H, (imgOrig.shape[1], imgOrig.shape[0])) #get the perspective image for overlaying on the video
+                M = cv2.addWeighted(imgOrig, 0.7, overlay, 0.8, 0) #overlay the video with the image
             cv2.imshow("win2", M)
             cv2.waitKey(1)
 
 def getHomography(I1, corners1):
+    """ get the homography matrix for an image by using four points"""
     imagePoints = []
     m, n, d = I1.shape
-    imagePoints.append([(float(0.0), float(0.0)), (float(n), 0), (float(n), float(m)), (0, m)])
-    imagePoints.append([ (float(corners1[0, 0, 0]), float(corners1[0, 0, 1])), (float(corners1[8, 0, 0]), float(corners1[8, 0, 1])), (float(corners1[53, 0, 0]), float(corners1[53, 0, 1])), (float(corners1[45, 0, 0]), float(corners1[45, 0, 1]))])
-    ip1 = np.array([[x, y] for (x, y) in imagePoints[0]])
-    ip2 = np.array([[x, y] for (x, y) in imagePoints[1]])
-    H, mask = cv2.findHomography(ip1, ip2)
+    imagePoints.append([(float(0.0), float(0.0)), (float(n), 0), (float(n), float(m)), (0, m)]) #append image corners point to an array
+    imagePoints.append([ (float(corners1[0, 0, 0]), float(corners1[0, 0, 1])), (float(corners1[8, 0, 0]), float(corners1[8, 0, 1])), (float(corners1[53, 0, 0]), float(corners1[53, 0, 1])), (float(corners1[45, 0, 0]), float(corners1[45, 0, 1]))]) #append patterns corners point to the previous array
+    ip1 = np.array([[x, y] for (x, y) in imagePoints[0]]) #select and convert part of the array to a numpy array
+    ip2 = np.array([[x, y] for (x, y) in imagePoints[1]]) #select and convert part of the array to a numpy array
+    H, mask = cv2.findHomography(ip1, ip2) #get the homography
     return H, imagePoints
 
 def cameraCalibration():
