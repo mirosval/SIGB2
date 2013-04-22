@@ -200,7 +200,7 @@ def texturemapGrid():
 
                 M = cv2.addWeighted(imgOrig, 0.5, overlay, 0.5, 0)
             cv2.imshow("win2", M)
-            cv2.waitKey(0)
+            cv2.waitKey(1)
 
 def getHomography(I1, corners1):
     imagePoints = []
