@@ -169,6 +169,51 @@ def texturemapGroundFloor(SequenceInputFile):
                 M = cv2.addWeighted(I2, 0.5, overlay, 0.5, 0)
                 cv2.imshow("Overlayed Image", M)
 
+def texturemapGrid():
+    """ Skeleton for texturemapping on a video sequence"""
+    fn = 'GridVideos/grid1.avi'
+    cap = cv2.VideoCapture(fn)
+    texture = cv2.imread('Images/ITULogo.jpg')
+    texture = cv2.pyrDown(texture)
+    running, imgOrig = cap.read()
+    mI, nI, t = imgOrig.shape
+    cv2.imshow("win2", imgOrig)
+    pattern_size = (9, 6)
+    idx = [0, 8, 45, 53]
+    while(running):
+    # load Tracking data
+        running, imgOrig = cap.read()
+        if(running):
+            imgOrig = cv2.pyrDown(imgOrig)
+            gray = cv2.cvtColor(imgOrig, cv2.COLOR_BGR2GRAY)
+            found, corners = cv2.findChessboardCorners(gray, pattern_size)
+            if found:
+                term = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_COUNT, 30, 0.1)
+                cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), term)
+                cv2.drawChessboardCorners(imgOrig, pattern_size, corners, found)
+                H, Points=getHomography(texture, corners)
+                aaaa=np.array(Points)
+                for t in idx:
+                    cv2.circle(imgOrig, (int(corners[t, 0, 0]), int(corners[t, 0, 1])), 10, (255, t, t))
+                overlay = cv2.warpPerspective(texture, H, (nI, mI))
+                #cv2.circle(overlay, (int(aaaa[1, 0, 0]), int(aaaa[1, 0, 1])), 20, (255, 255, 255))
+                #cv2.circle(overlay, (int(aaaa[1, 1, 0]), int(aaaa[1, 1, 1])), 20, (255, 255, 255))
+                #cv2.circle(overlay, (int(aaaa[1, 2, 0]), int(aaaa[1, 2, 1])), 20, (255, 255, 255))
+                #cv2.circle(overlay, (int(aaaa[1, 3, 0]), int(aaaa[1, 3, 1])), 20, (255, 255, 255))
+                #overlay=np.array(overlay)
+                M = cv2.addWeighted(imgOrig, 0, overlay, 0, 0)
+            cv2.imshow("win2", M)
+            cv2.waitKey(1)
+
+def getHomography(I1, corners1):
+    imagePoints = []
+    m, n, d = I1.shape
+    imagePoints.append([(float(0.0), float(0.0)), (float(n), 0), (float(n), float(m)), (0, m)])
+    imagePoints.append([ (float(corners1[0, 0, 0]), float(corners1[0, 0, 1])), (float(corners1[8, 0, 0]), float(corners1[8, 0, 1])), (float(corners1[53, 0, 0]), float(corners1[53, 0, 1])), (float(corners1[45, 0, 0]), float(corners1[45, 0, 1]))])
+    ip1 = np.array([[x, y] for (x, y) in imagePoints[0]])
+    ip2 = np.array([[x, y] for (x, y) in imagePoints[1]])
+    H, mask = cv2.findHomography(ip1, ip2)
+    return H, imagePoints
 
 def cameraCalibration():
     camNum = 0  # The number of the camera to calibrate
