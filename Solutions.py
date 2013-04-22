@@ -88,16 +88,20 @@ def displayTraceImage():
     cv2.waitKey(0)
 
 def traceVideo():
+    '''
+    Trace the person in the video and draw an overlay map
+    '''
     map = cv2.imread("Images/ITUMap.bmp")
     trace = np.loadtxt('GroundFloorData/trackingdata.dat')
 
+    # homography from the video image to the overview map (pre-calculated during calibration)
     homography = [[  8.90361746e-01, 7.47992675e+00, -1.41155997e+02],
                   [ -1.59597293e+00, 3.02053067e+00, 3.18806955e+02],
                   [  1.65239983e-03, 1.57927362e-02, 1.00000000e+00]]
+
     sequence = cv2.VideoCapture("GroundFloorData/SunClipDS.avi")
     retval, image = sequence.read()
 
-#    outputVideo = cv2.VideoWriter("Solutions/trace.avi", cv2.cv.FOURCC("i", "Y", "U", "V"), sequence.get(cv2.cv.CV_CAP_PROP_FPS), (map.shape[0], map.shape[1]))
     outputVideo = cv2.VideoWriter("Solutions/trace.avi", cv2.cv.FOURCC("X", "V", "I", "D"), sequence.get(cv2.cv.CV_CAP_PROP_FPS), (map.shape[1], map.shape[0]))
 
     tx = map.shape[1] - image.shape[1]
@@ -125,9 +129,6 @@ def traceVideo():
         # draw it into the image
         cv2.circle(map, destPoint, 2, (0, 0, 255), -1)
 
-#        cv2.imshow("Trace", map)
-#        cv2.waitKey(1)
-
         outputVideo.write(map)
 
         print(".", end="")
@@ -138,7 +139,6 @@ def traceVideo():
         traceId += 1
 
     outputVideo.release()
-#    cv2.waitKey(0)
 
 def texturemapGroundFloor(SequenceInputFile):
     sequence, I2, retval = getImageSequence(SequenceInputFile)
@@ -267,26 +267,41 @@ def loadCameraCalibration():
     return camera_matrix, coef
 
 def augmentImages():
+    '''
+    We augment arbitrary images with the chessboard with a cube
+    using a two-camera approach
+    '''
+    # load calibration
     cam_calibration, distCoef = loadCameraCalibration()
 
+    # choose points on the chessboard pattern
     idx = np.array([1, 7, 37, 43])
 
+    # load calibration pattern and transform the image
     calibration_pattern = cv2.imread("Images/CalibrationPattern.png")
     calibration_pattern = cv2.resize(calibration_pattern, (640, 480))
     calibration_pattern = cv2.cvtColor(calibration_pattern, cv2.COLOR_BGR2GRAY)
+
+    # get corners from the calibration pattern
     found, calibrationCorners = cv2.findChessboardCorners(calibration_pattern, (9, 6))
 
+    # load images to be augmented
     images = []
     for i in range(1, 8):
         images.append(cv2.imread("Solutions/cam_calibration{}.jpg".format(i)))
 
+    # augment the images one by one
     for image_id, image in enumerate(images):
+
+        # find the same corners as we had found previously in the
+        # chessboard pattern itself, only this one is in the video
         gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         found, corners = cv2.findChessboardCorners(gray, (9, 6))
 
         if not found:
             continue
 
+        # load up coords in the respective images
         imagePoints = []
         calibrationPoints = []
         for i in idx:
@@ -298,33 +313,45 @@ def augmentImages():
         imagePoints = np.array(imagePoints)
         calibrationPoints = np.array(calibrationPoints)
 
-        # Create imageCameraXRotation window for calibration image and show it
-        cv2.namedWindow('calibration image')
-        cv2.imshow('calibration image', calibration_pattern)
+#         cv2.imshow('calibration image', calibration_pattern)
 
+        # Create 1st camera, this one is looking at the pattern image
         cam1 = Camera(hstack((cam_calibration, dot(cam_calibration, np.array([[0], [0], [-1]])))))
         cam1.factor()
 
+        # Create the cube
         cube = cube_points([0, 0, 0.1], 0.3)
+
+        # Project the bottom square of the cube, this will transform
+        # point coordinates from the object space to the calibration
+        # world space where the camera looks
         calibration_rect = cam1.project(SIGBTools.toHomogenious(cube[:, :5]))
 
+        # Calculate the homography from the corners in the calibration image
+        # to the same points in the image that we want to project the cube to
         homography = SIGBTools.estimateHomography(calibrationPoints, imagePoints)
 
+        # Transform the rect from the calibration image world space to the final
+        # image world space
         transRect = SIGBTools.normalizeHomogenious(dot(homography, calibration_rect))
 
+        # Create the second camera, looking into the world of the final image
         cam2 = Camera(dot(homography, cam1.P))
 
+        # Recalculate the projection matrix
         calibrationInverse = np.linalg.inv(cam_calibration)
-
         rot = dot(calibrationInverse, cam2.P[:, :3])
 
+        # reassemble the rotation translation matrix
         r1, r2, t = tuple(np.hsplit(rot, 3))
         r3 = cross(r1.T, r2.T).T
         rotationTranslationMatrix = np.hstack((r1, r2, r3, t))
 
+        # Create the projection matrix
         cam2.P = dot(cam_calibration, rotationTranslationMatrix)
         cam2.factor()
 
+        # project the cube using the 2nd camera
         cube = cube_points([0, 0, 0.1], 0.3)
         box = cam2.project(SIGBTools.toHomogenious(cube))
 
@@ -335,6 +362,7 @@ def augmentImages():
             y2 = box[1, i]
             cv2.line(image, (int(x1), int(y1)), (int(x2), int(y2)), (0, 0, 255), 2)
 
+        # save image
         cv2.imwrite("Solutions/augmentation{}.png".format(image_id), image)
 
         cv2.imshow("Test", image)
@@ -416,10 +444,15 @@ def realisticTexturemapSol(scale):
 
     def onMouse(event, x, y, flags, output):
         if event == 1:
+
+            # point in the map image where the user clicked
             point = (x, y)
 
+            # Homography from ground -> map inverted is
+            # homography from map -> ground
             hmg = np.linalg.inv(hgm)
 
+            # source points are points in the overview map
             width = tex.shape[1]
             height = tex.shape[0]
             source = [[x - width / 2, y - height / 2],
@@ -429,6 +462,7 @@ def realisticTexturemapSol(scale):
 
             source = np.array(source, dtype=float32)
 
+            # dest points are points in the video image
             dest = []
             for point in source:
                 p = np.append(point, [1]).T
@@ -441,19 +475,23 @@ def realisticTexturemapSol(scale):
 
             dest = np.array(dest, dtype=float32)
 
-            transform = cv2.getPerspectiveTransform(source, dest)
-
+            # tex source points are corners of the texture image
             texSource = [[0, 0],
                          [tex.shape[1], 0],
                          [0, tex.shape[0]],
                          [tex.shape[1], tex.shape[0]]]
             texSource = np.array(texSource, dtype=float32)
 
+            # find the homography from the texture image to the video image
             transform, mask = cv2.findHomography(texSource, dest)
+
+            # draw the image into perspective
             overlay = cv2.warpPerspective(tex, transform, (image.shape[1], image.shape[0]))
 
+            # combine the results
             result = cv2.addWeighted(image, 0.5, overlay, 0.5, 0)
 
+            # draw the result
             newMap = np.copy(map)
             for p in source:
                 cv2.circle(newMap, (int(p[0]), int(p[1])), 2, (0, 0, 255), -1)
@@ -463,8 +501,6 @@ def realisticTexturemapSol(scale):
 
             cv2.imshow("Map", newMap)
             cv2.imshow("Result", result)
-
-
 
     cv2.setMouseCallback("Map", onMouse)
 

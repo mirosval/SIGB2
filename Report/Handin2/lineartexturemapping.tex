@@ -1,6 +1,6 @@
 \section{Linear Texture Mapping}
 
-This section is divided into three parts, ﬁrst we will look at how to overview the ITU logo on the image sequence of universities ground floor. Then we look at how we can overview a texture on a moving object. In the third part we tried to be sure that the texture looks realistic compared to the geometry of the texture.
+This section is divided into three parts, first we will look at how to overview the ITU logo on the image sequence of universities ground floor. Then we look at how we can overview a texture on a moving object. In the third part we tried to be sure that the texture looks realistic compared to the geometry of the texture.
 
 \subsection{Ground Floor}
 
@@ -15,7 +15,7 @@ In this part we tried to overview the ITU logo on the image sequence of ground f
 
 \subsection{Moving object}
 
-In the second part of linear texture mapping we tried to experiment with texture mapping on image sequences where the objects move. We have been given some video files where a grid pattern moves in it. The aim is to mapping a texture on the pattern that will move with it. For the start we found the pattern corners with findChessboardCorners function and used it for calculating the homography matrix and overview the logo on the pattern. So for each frame we get a new homography matrix and new texture mapping. Our implementation weakness is that in some frames that it can’t detect corners of the pattern it will fail because we used corners location to mapping the logo.
+In the second part of linear texture mapping we tried to experiment with texture mapping on image sequences where the objects move. We have been given some video files where a grid pattern moves in it. The aim is to mapping a texture on the pattern that will move with it. For the start we found the pattern corners with findChessboardCorners function and used it for calculating the homography matrix and overview the logo on the pattern. So for each frame we get a new homography matrix and new texture mapping. Our implementation weakness is that in some frames that it can't detect corners of the pattern it will fail because we used corners location to mapping the logo.
 
 \begin{figure}[h!]
 	\centering
