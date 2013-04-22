@@ -190,8 +190,6 @@ def texturemapGrid():
             gray = cv2.cvtColor(imgOrig, cv2.COLOR_BGR2GRAY)
             found, corners = cv2.findChessboardCorners(gray, pattern_size)
             if found:
-                #term = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_COUNT, 30, 0.1)
-                #cv2.cornerSubPix(gray, corners, (5, 5), (-1, -1), term)
                 H, Points = getHomography(texture, corners) #find the homography matrix to overview the texture on patterns corners
                 overlay = cv2.warpPerspective(texture, H, (imgOrig.shape[1], imgOrig.shape[0])) #get the perspective image for overlaying on the video
                 M = cv2.addWeighted(imgOrig, 0.7, overlay, 0.8, 0) #overlay the video with the image
