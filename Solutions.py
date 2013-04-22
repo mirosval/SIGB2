@@ -198,7 +198,7 @@ def texturemapGrid():
 
                 overlay = cv2.warpPerspective(texture, H, (imgOrig.shape[1], imgOrig.shape[0]))
 
-                M = cv2.addWeighted(imgOrig, 0.5, overlay, 0.5, 0)
+                M = cv2.addWeighted(imgOrig, 0.7, overlay, 0.8, 0)
             cv2.imshow("win2", M)
             cv2.waitKey(1)
 
