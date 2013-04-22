@@ -9,8 +9,8 @@ In this part we tried to overview the ITU logo on the image sequence of ground f
 \begin{figure}[h!]
 	\centering
 	\includegraphics[width=\textwidth]{Handin2/images/linearmapping.jpg}
-	\caption{Trace Map}
-	\label{fig:trace}
+	\caption{Linear Mapping}
+	\label{fig:linearmapping}
 \end{figure}
 
 \subsection{Moving object}
@@ -19,9 +19,20 @@ In the second part of linear texture mapping we tried to experiment with texture
 
 \begin{figure}[h!]
 	\centering
-	\includegraphics[width=\textwidth]{Handin2/images/linearmapping-part2.jpg}
+	\includegraphics[width=\textwidth]{Handin2/images/linearmapping2.jpg}
 	\caption{Moving Pattern}
-	\label{fig:trace}
+	\label{fig:movingpattern}
 \end{figure}
 
 \subsection{Ensuring a correctly placed texturemap}
+
+The last part, depicted in Figure \ref{fig:realistictexturing}, is realistic texture placement on the ground floor. We start by selecting a point in the overview map. Next, we calculate placement of corner points in the overview map. We regard the selected point as a center, and then we calculate the corners from provided scale factor and texture dimensions.
+
+We are then able to obtain the positions of the corners in the video image by calculating the dot product of the inverse of the homography $H_{G}^{M}$ and the positions of the points in the overview map. We can then calculate the homography between the texture T and ground plane in the video image G $H_{T}^{G}$. This allows us to position the texture consistently with the ground plane just by selecting a single point.
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=\textwidth]{Handin2/images/realistictexturing.png}
+	\caption{Realistic Texturing}
+	\label{fig:realistictexturing}
+\end{figure}
