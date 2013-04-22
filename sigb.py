@@ -6,6 +6,6 @@ import Solutions
 # Solutions.texturemapGroundFloor("GroundFloorData/SunClipDS.avi")
 
 # Solutions.cameraCalibration()
-Solutions.augmentImages()
-
+#Solutions.augmentImages()
+Solutions.texturemapGrid()
 # Solutions.texturemapGridSequence()
