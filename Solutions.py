@@ -399,3 +399,73 @@ def texturemapGridSequence():
                     cv2.circle(imgOrig, (int(corners[t, 0, 0]), int(corners[t, 0, 1])), 10, (255, t, t))
             cv2.imshow("win2", imgOrig)
             cv2.waitKey(1)
+
+
+def realisticTexturemapSol(scale):
+    hgm = np.load("Solutions/trace_homography.npy")
+
+    cap = cv2.VideoCapture("GroundFloorData/SunClipDS.avi")
+    retval, image = cap.read()
+
+    map = cv2.imread("Images/ITUMap.bmp")
+    tex = cv2.imread("Images/ITULogo.jpg")
+
+    tex = cv2.resize(tex, (int(tex.shape[1] * scale), int(tex.shape[0] * scale)))
+
+    cv2.imshow("Map", map)
+
+    def onMouse(event, x, y, flags, output):
+        if event == 1:
+            point = (x, y)
+
+            hmg = np.linalg.inv(hgm)
+
+            width = tex.shape[1]
+            height = tex.shape[0]
+            source = [[x - width / 2, y - height / 2],
+                      [x + width / 2, y - height / 2],
+                      [x - width / 2, y + height / 2],
+                      [x + width / 2, y + height / 2]]
+
+            source = np.array(source, dtype=float32)
+
+            dest = []
+            for point in source:
+                p = np.append(point, [1]).T
+                p = dot(hmg, p).T
+
+                p[0] = p[0] / p[2]
+                p[1] = p[1] / p[2]
+
+                dest.append(p[:2])
+
+            dest = np.array(dest, dtype=float32)
+
+            transform = cv2.getPerspectiveTransform(source, dest)
+
+            texSource = [[0, 0],
+                         [tex.shape[1], 0],
+                         [0, tex.shape[0]],
+                         [tex.shape[1], tex.shape[0]]]
+            texSource = np.array(texSource, dtype=float32)
+
+            transform, mask = cv2.findHomography(texSource, dest)
+            overlay = cv2.warpPerspective(tex, transform, (image.shape[1], image.shape[0]))
+
+            result = cv2.addWeighted(image, 0.5, overlay, 0.5, 0)
+
+            newMap = np.copy(map)
+            for p in source:
+                cv2.circle(newMap, (int(p[0]), int(p[1])), 2, (0, 0, 255), -1)
+
+            for p in dest:
+                cv2.circle(result, (int(p[0]), int(p[1])), 2, (0, 0, 255), -1)
+
+            cv2.imshow("Map", newMap)
+            cv2.imshow("Result", result)
+
+
+
+    cv2.setMouseCallback("Map", onMouse)
+
+    cv2.waitKey(0)
