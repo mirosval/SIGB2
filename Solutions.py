@@ -171,7 +171,7 @@ def texturemapGroundFloor(SequenceInputFile):
 
 def texturemapGrid():
     """ Skeleton for texturemapping on a video sequence"""
-    fn = 'GridVideos/grid1.avi'
+    fn = 'GridVideos/grid1.mp4'
     cap = cv2.VideoCapture(fn)
     texture = cv2.imread('Images/ITULogo.jpg')
     texture = cv2.pyrDown(texture)
