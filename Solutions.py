@@ -146,7 +146,7 @@ def texturemapGroundFloor(SequenceInputFile):
     '''
     sequence, I2, retval = getImageSequence(SequenceInputFile)
     I1 = cv2.imread('Images/ITULogo.jpg')
-    H, Points = SIGBTools.getHomographyFromMouse(I1, I2, -4) #get 4 points from mouse input 
+    H, Points = SIGBTools.getHomographyFromMouse(I1, I2, -4)  # get 4 points from mouse input
     h, w, d = I2.shape
     if(retval):
         cv2.imshow("Overlayed Image", I2)
@@ -168,9 +168,9 @@ def texturemapGroundFloor(SequenceInputFile):
         if(running):
             retval, I2 = sequence.read()
             if(retval):  # if there is an image
-                overlay = cv2.warpPerspective(I1, H, (w, h)) #get the perspective image for overlaying on the video
-                M = cv2.addWeighted(I2, 0.5, overlay, 0.5, 0) #overlay the video with the image
-                cv2.imshow("Overlayed Image", M) #show the result
+                overlay = cv2.warpPerspective(I1, H, (w, h))  # get the perspective image for overlaying on the video
+                M = cv2.addWeighted(I2, 0.5, overlay, 0.5, 0)  # overlay the video with the image
+                cv2.imshow("Overlayed Image", M)  # show the result
 
 def texturemapGrid():
     """ Skeleton for texturemapping on a video sequence"""
@@ -190,9 +190,9 @@ def texturemapGrid():
             gray = cv2.cvtColor(imgOrig, cv2.COLOR_BGR2GRAY)
             found, corners = cv2.findChessboardCorners(gray, pattern_size)
             if found:
-                H, Points = getHomography(texture, corners) #find the homography matrix to overview the texture on patterns corners
-                overlay = cv2.warpPerspective(texture, H, (imgOrig.shape[1], imgOrig.shape[0])) #get the perspective image for overlaying on the video
-                M = cv2.addWeighted(imgOrig, 0.7, overlay, 0.8, 0) #overlay the video with the image
+                H, Points = getHomography(texture, corners)  # find the homography matrix to overview the texture on patterns corners
+                overlay = cv2.warpPerspective(texture, H, (imgOrig.shape[1], imgOrig.shape[0]))  # get the perspective image for overlaying on the video
+                M = cv2.addWeighted(imgOrig, 0.7, overlay, 0.8, 0)  # overlay the video with the image
             cv2.imshow("win2", M)
             cv2.waitKey(1)
 
@@ -200,11 +200,11 @@ def getHomography(I1, corners1):
     """ get the homography matrix for an image by using four points"""
     imagePoints = []
     m, n, d = I1.shape
-    imagePoints.append([(float(0.0), float(0.0)), (float(n), 0), (float(n), float(m)), (0, m)]) #append image corners point to an array
-    imagePoints.append([ (float(corners1[0, 0, 0]), float(corners1[0, 0, 1])), (float(corners1[8, 0, 0]), float(corners1[8, 0, 1])), (float(corners1[53, 0, 0]), float(corners1[53, 0, 1])), (float(corners1[45, 0, 0]), float(corners1[45, 0, 1]))]) #append patterns corners point to the previous array
-    ip1 = np.array([[x, y] for (x, y) in imagePoints[0]]) #select and convert part of the array to a numpy array
-    ip2 = np.array([[x, y] for (x, y) in imagePoints[1]]) #select and convert part of the array to a numpy array
-    H, mask = cv2.findHomography(ip1, ip2) #get the homography
+    imagePoints.append([(float(0.0), float(0.0)), (float(n), 0), (float(n), float(m)), (0, m)])  # append image corners point to an array
+    imagePoints.append([ (float(corners1[0, 0, 0]), float(corners1[0, 0, 1])), (float(corners1[8, 0, 0]), float(corners1[8, 0, 1])), (float(corners1[53, 0, 0]), float(corners1[53, 0, 1])), (float(corners1[45, 0, 0]), float(corners1[45, 0, 1]))])  # append patterns corners point to the previous array
+    ip1 = np.array([[x, y] for (x, y) in imagePoints[0]])  # select and convert part of the array to a numpy array
+    ip2 = np.array([[x, y] for (x, y) in imagePoints[1]])  # select and convert part of the array to a numpy array
+    H, mask = cv2.findHomography(ip1, ip2)  # get the homography
     return H, imagePoints
 
 def cameraCalibration():
@@ -413,6 +413,7 @@ def texturemapGridSequence():
 
                 imgOrig = cv2.addWeighted(imgOrig, 0.5, overlay, 0.5, 0)
 
+                # Nicer overlay, but runs slower
 #                 for y, row in enumerate(imgOrig):
 #                     for x, color in enumerate(row):
 #                         if overlay[y][x][0] != 0 and overlay[y][x][1] != 0 and overlay[y][x][2] != 0:
