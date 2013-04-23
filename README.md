@@ -1,4 +1,4 @@
-# SIGB Eye Tracker Mandatory Assignment
+# SIGB Mandatory Assignment #2
 
 This is a companion file for the mandatory assignment 1 for the SIGB Course at IT University of Copenhagen Spring 2013.
 
